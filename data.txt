@@ -1,0 +1,203 @@
+
+
+
+Model
+
+@Named
+@ApplicationScoped
+
+public class ModelCustomer {
+    EntityManager em;
+    Collection<Tblcustomer> getCustomerRating;
+
+    public ModelCustomer() {
+               em = Persistence.createEntityManagerFactory("CustomerPU").createEntityManager();
+    }
+    
+    public void setCustomerRating(Collection<Tblcustomer> getCustomerWithRating) {
+        this.getCustomerRating = getCustomerRating;
+    }
+    
+    public Collection<Tblcustomer> getCustomerRating(String condition,int rating)
+    {
+        Collection<Tblcustomer> allcustomers = new ArrayList<Tblcustomer>();
+        if(condition.equals("lt"))
+        {
+         allcustomers = em.createQuery("SELECT c FROM Tblcustomer c where c.rating<"+rating).getResultList();
+        }
+        if(condition.equals("gt"))
+        {
+         allcustomers = em.createQuery("SELECT c FROM Tblcustomer c where c.rating>"+rating).getResultList();
+        }
+        
+        if(condition.equals("lte"))
+        {
+         allcustomers = em.createQuery("SELECT c FROM Tblcustomer c where c.rating<= "+rating).getResultList();
+        }
+        
+        if(condition.equals("gte"))
+        {
+         allcustomers = em.createQuery("SELECT c FROM Tblcustomer c where c.rating>= "+rating).getResultList();
+        }
+        
+        if(condition.equals("et"))
+        {
+         allcustomers = em.createQuery("SELECT c FROM Tblcustomer c where c.rating = "+rating).getResultList();
+        }
+        return allcustomers;
+    }
+    
+}
+
+public void AddEmployee(int DeptId, String Name) {
+        Employeetb emp = new Employeetb();
+        Departmenttb dept = new Departmenttb();
+        dept.setId(DeptId);
+        emp.setDepartmentId(dept);
+        emp.setName(Name);
+        em.getTransaction().begin();
+        em.persist(emp);
+        em.getTransaction().commit();
+    }
+
+Source
+
+@Path("/customer")
+@RequestScoped
+public class CustomerResource {
+    @Inject ModelCustomer cm;
+    
+    @GET
+    @Path("getCustomerRating/{condition}/{rating}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Collection<Tblcustomer> getCustomerRating(@PathParam("condition") String condition,@PathParam("rating")int rating)
+    {
+        return cm.getCustomerRating(condition, rating);
+    }
+
+    @POST
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("addemployee/{departmentid}/{name}")
+    public void addEmployee(@PathParam("departmentid") int departmentid, @PathParam("name") String name) {
+        employeeModel.AddEmployee(departmentid, name);
+    }
+}
+
+Client(Interface)
+
+@RegisterRestClient(configKey = "Clientcustomer",baseUri="http://localhost:8080/CustomerService1/rest")
+@ApplicationScoped
+@Path("/generic")
+public interface ClientCustomer {
+    
+    @GET
+    @Path("getCustomerRating/{condition}/{rating}")
+    public Collection<Tblcustomer> getCustomerRating(@PathParam("condition") String condition,@PathParam("rating")int rating);
+}
+
+
+Servlet
+@Inject @RestClient ClientCustomer cc;
+
+try (PrintWriter out = response.getWriter()) {
+            /* TODO output your page here. You may use following sample code. */
+            if(request.getParameter("condition") != null && request.getParameter("rating") != null )
+            {
+                String condition = request.getParameter("condition");
+                int rating = Integer.parseInt(request.getParameter("rating").toString());
+                System.out.println("C: "+condition+ "R:"+rating);
+                Collection<Tblcustomer> customerwithRating = cc.getCustomerRating(condition,rating);
+                
+                out.println("<table>");
+                out.println("<tr> <td>Email</td>"
+                        + "<td>Name</td>"
+                        + "<td>Rating</td>"
+                        + "<td>Address</td>"
+                        + "<td>Number</td> </tr>");
+                customerwithRating.forEach(Tblcustomer-> {
+                  out.println("<tr> <td>"+ Tblcustomer.getEmail() +"</td> <td>"+ Tblcustomer.getCustomername()+"</td> <td>"+Tblcustomer.getRating()+ "</td> <td>"+Tblcustomer.getAddress()+ "</td> </tr>" );
+                });
+                out.println("</table>");
+            }
+
+ out.println("<body>");
+            out.println("<h1>Servlet CustomerS at " + request.getContextPath() + "</h1>");
+            
+            out.println("<form method='GET'>");
+            out.println("Condition :<select name='condition'>");
+            out.println("<option value='0'>Select</option>");
+            out.println("<option value='lt'>Less Than</option>");
+            out.println("<option value='gt'>Greater Than</option>");
+            out.println("<option value='lte'>Less Than or Equals to</option>");
+            out.println("<option value='gte'>Greater Than or Equals to</option>");
+            out.println("<option value='et'>Equals to</option>");
+            out.println("</select>");
+            out.println("Rating:<input type='text' name='rating'>");
+            out.println("<input type='submit' value='Enter' >");
+            out.println("</form>");
+            
+            if(request.getParameter("condition") != null && request.getParameter("rating") != null )
+            {
+                String condition = request.getParameter("condition");
+                int rating = Integer.parseInt(request.getParameter("rating").toString());
+                System.out.println("C: "+condition+ "R:"+rating);
+                Collection<Tblcustomer> customerwithRating = cc.getCustomerRating(condition,rating);
+                
+                out.println("<table>");
+                out.println("<tr> <td>Email</td>"
+                        + "<td>Name</td>"
+                        + "<td>Rating</td>"
+                        + "<td>Address</td>"
+                        + "<td>Number</td> </tr>");
+                customerwithRating.forEach(Tblcustomer-> {
+                  out.println("<tr> <td>"+ Tblcustomer.getEmail() +"</td> <td>"+ Tblcustomer.getCustomername()+"</td> <td>"+Tblcustomer.getRating()+ "</td> <td>"+Tblcustomer.getAddress()+ "</td> </tr>" );
+                });
+                out.println("</table>");
+            }
+            
+            //Collection<Tblcustomer> customerwithRating = cc.getCustomerRating("eq", 0);
+                    
+            out.println("</body>");
+
+
+service ->other sources->properties file
+accepeted.issuer = https://server.example.com
+publickey
+
+interface
+@ClientHeaderParam(name = "Authorization",value = "{generateToken}")
+
+default String generateToken ()
+    {
+        String token = GenerateToken.generateJWT();
+        System.out.println(token);
+        return "baarer " + token;
+    }
+
+bootstrap
+@SuppressWarnings({"EmptyClass", "SuppressionAnnotation"})
+@ApplicationPath("rest")
+
+
+public void Main()
+        {
+            var InsertCount = Dts.Variables["User::InsertRowCount"].Value;
+            var UpdateCount = Dts.Variables["User::UpdateRowCount"].Value;
+            var DeleteCount = Dts.Variables["User::DeleteRowCount"].Value;
+
+            MessageBox.Show(String.Format("Inserted Records: {0}\n Updated Records: {1}\n Deleted Records: {2}", InsertCount, UpdateCount, DeleteCount));
+
+            Dts.TaskResult = (int)ScriptResults.Success;
+        }
+
+((!ISNULL([Column 0])) && (ISNULL(PersonID)))
+
+((!ISNULL([Column 0])) && (!ISNULL(PersonID)))
+
+((ISNULL([Column 0])) && (!ISNULL(PersonID)))
+
+INSERT INTO dbo.Persons VALUES(?,?,?,?,?)
+
+UPDATE dbo.Persons SET FirstName=?,LastName=?,Address=?,City=? WHERE PersonID=?
+
+DELETE FROM dbo.Persons WHERE PersonID=?
