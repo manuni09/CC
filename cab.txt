@@ -1,0 +1,135 @@
+->create database 
+->create 2 maven-archetype projects-> one service one client
+->for both add payara server from project properties->run
+	change from 11 to 8 in pom.xml
+	in other sources->src/main/resources->add persistence unit give same name and select db
+	add entity from database in entity package
+
+->service project
+	new->java class-> name: ,package:com.mycompany.cabservice.model ->
+public class cabmodel {
+    EntityManager em;
+
+    public cabmodel() {
+        em = Persistence.createEntityManagerFactory("cabPU").createEntityManager();
+    }
+    
+    public Collection<Cabtb> getCabs()
+    {
+        return em.createNamedQuery("Cabtb.findAll").getResultList();
+    }
+    
+    public Collection<Cabtb> getSize(String size)
+    {
+        Collection<Cabtb> allcabs = new ArrayList<Cabtb>();
+        System.out.println("M :"+size);
+        if(size.equals("mini"))
+        {
+            System.out.println("Mini :"+size);
+         allcabs = em.createQuery("SELECT c FROM Cabtb c WHERE c.size ='mini' ").getResultList();
+        }
+        
+        if(size.equals("normal"))
+        {
+         allcabs = em.createQuery("SELECT c FROM Cabtb c WHERE c.size ='normal' ").getResultList();
+        }
+        return allcabs;
+    }
+}
+
+->Source packages->com.mycompany.cabservice.service ->Exampleservice.java:
+@Path("/example")
+public class ExampleService {
+
+    @Inject cabmodel cm;
+    
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Collection<Cabtb> getAllCabs()
+    {
+        return cm.getCabs();
+    }
+    
+    @GET
+    @Path("getSize/{size}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Collection<Cabtb> getSize(@PathParam("size") String size)
+    {
+        return cm.getSize(size);
+    }
+
+}
+
+->in client project: Source packages->com.mycompany.cabservice.service->new->java interface-> name:cabClient :
+@RegisterRestClient(configKey = "cab", baseUri = "http://localhost:8080/cabService/rest/example")
+@ApplicationScoped
+//@Path("/customer")
+
+public interface cabClient {
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Collection<Cabtb> getAllCabs();
+    
+    @GET
+    @Path("getSize/{size}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Collection<Cabtb> getSize(@PathParam("size") String size);
+    
+}
+
+->Source packages->new->servlet-> name:testServlet ,package:com.mycompany.cabservice.servlet->
+public class testServlet extends HttpServlet {
+@Inject @RestClient cabClient cc;
+
+//for simple display:
+out.println("<table>");
+out.println("<tr><td>Model</td>"
+                    + "<td>Status</td>"
+                    + "<td>Company</td>"
+                    + "<td>DriverName</td>"
+                    + "<td>Rating<td>"
+                    + "<td>size</td> </tr>");
+Collection<Cabtb> getcab = cc.getAllCabs();
+for(Cabtb gc:getcab)
+{
+	out.println("<tr><td>"+gc.getModel()+"</td>"
+                        + "<td>"+gc.getStatus()+"</td>"
+                        + "<td>"+gc.getCompany()+"</td>"
+                        + "<td>"+gc.getDrivername()+"</td>"
+                        + "<td>"+gc.getRating()+"</td>"
+                        + "<td>"+gc.getSize()+"</td></tr>");
+}
+
+//for condition display:
+out.println("<form method='GET'>");
+            out.println("Condition :<select name='size'>");
+            out.println("<option value='0'>Select</option>");
+            out.println("<option value='mini'>Mini</option>");
+            out.println("<option value='normal'>Normal</option>");
+            out.println("<input type='submit' value='Go'>");
+            out.println("</select>");
+            
+            if(request.getParameter("size") != null)
+            {
+                String size = request.getParameter("size");
+                System.out.println("S: "+size);
+                Collection<Cabtb> getSize = cc.getSize(size);
+                out.println("<table>");
+            out.println("<tr><td>Model</td>"
+                    + "<td>Status</td>"
+                    + "<td>Company</td>"
+                    + "<td>DriverName</td>"
+                    + "<td>Rating<td>"
+                    + "<td>size</td> </tr>");
+getSize.forEach(gc ->{
+                out.println("<tr><td>"+gc.getModel()+"</td>"
+                        + "<td>"+gc.getStatus()+"</td>"
+                        + "<td>"+gc.getCompany()+"</td>"
+                        + "<td>"+gc.getDrivername()+"</td>"
+                        + "<td>"+gc.getRating()+"</td>"
+                        + "<td>"+gc.getSize()+"</td></tr>");
+                        });
+            }
+                
+            out.println("</table>");
+            out.println("</form>");
